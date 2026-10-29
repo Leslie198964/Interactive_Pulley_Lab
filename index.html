@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Pulley Physics Lab</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background-color: #f8fafc;
+            /* Prevent pull-to-refresh on mobile */
+            overscroll-behavior-y: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Reusable SVG Background Grid */
+        .svg-bg {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(#f1f5f9 2px, transparent 2px),
+                linear-gradient(90deg, #f1f5f9 2px, transparent 2px);
+            background-size: 40px 40px;
+            background-position: -20px -20px;
+        }
+
+        /* Interactive Handle Styles */
+        .pull-handle {
+            cursor: grab;
+            touch-action: none;
+        }
+        
+        .pull-handle:active, body.is-pulling .pull-handle {
+            cursor: grabbing;
+        }
+
+        .pull-handle:hover .force-arrow {
+            filter: drop-shadow(0px 8px 12px rgba(34, 197, 94, 0.4));
+            transform: scale(1.03);
+            transition: transform 0.2s, filter 0.2s;
+        }
+
+        /* Transition for view switching */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 text-slate-800">
+
+    <!-- MAIN APP CONTAINER -->
+    <div class="max-w-6xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200 relative min-h-[700px] flex flex-col">
+        
+        <!-- ========================================== -->
+        <!-- VIEW 0: HOME / MENU                        -->
+        <!-- ========================================== -->
+        <div id="view-menu" class="view-section flex-1 flex flex-col items-center justify-center p-8 lg:p-12 fade-in">
+            <div class="text-center mb-12">
+                <div class="inline-block px-4 py-1.5 mb-4 text-sm font-bold tracking-wide text-indigo-700 bg-indigo-100 rounded-full">
+                    Physics Simulation Lab
+                </div>
+                <h1 class="text-4xl sm:text-5xl font-black text-slate-900 mb-4">Pulley Systems</h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">
+                    Explore the mechanics of different pulley setups. Learn how they change the direction of force and multiply your effort through mechanical advantage.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-5xl">
+                <!-- Card 1: Fixed Pulley -->
+                <button onclick="showView('view-fixed')" class="group text-left bg-slate-50 hover:bg-white border-2 border-slate-200 hover:border-blue-500 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"></path></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Fixed Pulley</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">Changes the direction of force. Mechanical Advantage = 1. (F = W)</p>
+                </button>
+
+                <!-- Card 2: Movable Pulley -->
+                <button onclick="showView('view-movable')" class="group text-left bg-slate-50 hover:bg-white border-2 border-slate-200 hover:border-orange-500 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="w-16 h-16 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Movable Pulley</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">Halves the required force but doubles the distance. Mechanical Advantage = 2. (F = W/2)</p>
+                </button>
+
+                <!-- Card 3: Compound Pulley -->
+                <button onclick="showView('view-compound')" class="group text-left bg-slate-50 hover:bg-white border-2 border-slate-200 hover:border-teal-500 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
+                    <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Compound Pulley</h3>
+                    <p class="text-slate-500 text-sm leading-relaxed">Combines fixed and movable pulleys for the best of both. Mechanical Advantage = 2.</p>
+                </button>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- SHARED BACK BUTTON (Visible in lab views)  -->
+        <!-- ========================================== -->
+        <button id="btn-back" onclick="showView('view-menu')" class="hidden absolute top-6 left-6 z-50 bg-white border border-slate-200 shadow-sm hover:shadow-md hover:bg-slate-50 text-slate-600 px-4 py-2 rounded-xl flex items-center gap-2 transition-all font-semibold text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Menu
+        </button>
+
+        <!-- ========================================== -->
+        <!-- VIEW 1: FIXED PULLEY                       -->
+        <!-- ========================================== -->
+        <div id="view-fixed" class="view-section hidden flex-1 flex flex-col lg:flex-row w-full h-full fade-in">
+            <!-- Text Panel -->
+            <div class="lg:w-5/12 p-8 pt-20 lg:p-12 lg:pt-24 flex flex-col justify-center bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 z-10">
+                <div class="inline-block px-3 py-1 mb-4 text-xs font-semibold text-blue-700 bg-blue-100 rounded-full w-max">MA = 1</div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-4">Fixed Pulley</h1>
+                <div class="mb-6 flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl">
+                    <svg class="w-6 h-6 shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    <span class="font-semibold text-sm">Drag the green arrow downwards!</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-lg">Direction Change</h3>
+                        <p class="text-slate-500 text-sm mt-1">A fixed pulley does not multiply force. It changes the direction of the force. You pull down to lift the load up.</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-lg">Distance & Force (1:1)</h3>
+                        <p class="text-slate-500 text-sm mt-1">
+                            The effort force equals the load weight (<strong class="text-blue-600">F = W</strong>). The distance pulled equals the distance lifted (<strong class="text-orange-600">s = h</strong>).
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- Interactive SVG -->
+            <div class="lg:w-7/12 relative svg-bg flex items-center justify-center p-0 min-h-[600px] overflow-hidden">
+                <svg viewBox="0 0 500 680" class="w-full h-full max-h-[750px]">
+                    <defs>
+                        <filter id="fp-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.15"/></filter>
+                        <filter id="fp-glow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#22c55e" flood-opacity="0.4"/></filter>
+                        <pattern id="fp-hatch" patternUnits="userSpaceOnUse" width="14" height="14"><path d="M-2,2 l4,-4 M0,14 l14,-14 M12,16 l4,-4" stroke="#94a3b8" stroke-width="2" /></pattern>
+                    </defs>
+                    <!-- Ceiling -->
+                    <rect x="120" y="20" width="260" height="24" fill="url(#fp-hatch)" stroke="#64748b" stroke-width="3" rx="4"/>
+                    <line x1="80" y1="44" x2="420" y2="44" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+                    
+                    <!-- Bracket Holding Pulley -->
+                    <path d="M 225 44 C 225 80, 240 140, 250 140 C 260 140, 275 80, 275 44 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="3" filter="url(#fp-shadow)"/>
+                    <circle cx="250" cy="140" r="50" fill="#f8fafc" stroke="#475569" stroke-width="4" filter="url(#fp-shadow)"/>
+                    <circle cx="250" cy="140" r="42" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+                    <path d="M 200 140 A 50 50 0 0 1 300 140" fill="none" stroke="#64748b" stroke-width="7" />
+
+                    <!-- Rotating Pulley Inner -->
+                    <g id="fp-wheel" style="transform-origin: 250px 140px;">
+                        <line x1="250" y1="90" x2="250" y2="190" stroke="#94a3b8" stroke-width="3" stroke-dasharray="6 6"/>
+                        <line x1="200" y1="140" x2="300" y2="140" stroke="#94a3b8" stroke-width="3" stroke-dasharray="6 6"/>
+                    </g>
+                    <circle cx="250" cy="140" r="8" fill="#94a3b8" stroke="#334155" stroke-width="3"/>
+
+                    <!-- Dynamic Ropes -->
+                    <line id="fp-rope-left" x1="200" y1="140" x2="200" y2="400" stroke="#64748b" stroke-width="7"/>
+                    <line id="fp-rope-right" x1="300" y1="140" x2="300" y2="280" stroke="#64748b" stroke-width="7"/>
+
+                    <!-- Weight (Moves Up) -->
+                    <g id="fp-weight-sys">
+                        <circle cx="200" cy="410" r="10" fill="none" stroke="#475569" stroke-width="5"/>
+                        <line x1="200" y1="420" x2="200" y2="430" stroke="#475569" stroke-width="5"/>
+                        <rect x="160" y="430" width="80" height="70" rx="10" fill="#f59e0b" stroke="#b45309" stroke-width="4" filter="url(#fp-shadow)"/>
+                        <text x="200" y="478" fill="white" font-size="34" font-weight="900" text-anchor="middle">W</text>
+                    </g>
+
+                    <!-- Force Handle (Moves Down) -->
+                    <g id="fp-force-handle" class="pull-handle">
+                        <rect x="250" y="200" width="140" height="250" fill="transparent"/>
+                        <path d="M 290 260 C 290 280, 310 280, 310 260" fill="none" stroke="#475569" stroke-width="6"/>
+                        <circle cx="300" cy="250" r="10" fill="#e2e8f0" stroke="#475569" stroke-width="4"/>
+                        <g class="force-arrow" filter="url(#fp-glow)">
+                            <line x1="300" y1="270" x2="300" y2="380" stroke="#22c55e" stroke-width="12" stroke-linecap="round"/>
+                            <path d="M 280 350 L 300 390 L 320 350" stroke="#22c55e" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- Grip -->
+                            <line x1="288" y1="290" x2="312" y2="290" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="288" y1="300" x2="312" y2="300" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="288" y1="310" x2="312" y2="310" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <rect x="330" y="315" width="90" height="40" rx="20" fill="white" stroke="#22c55e" stroke-width="2" opacity="0.95"/>
+                            <text x="375" y="342" fill="#16a34a" font-size="18" font-weight="900" text-anchor="middle">F = W</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: MOVABLE PULLEY                     -->
+        <!-- ========================================== -->
+        <div id="view-movable" class="view-section hidden flex-1 flex flex-col lg:flex-row w-full h-full fade-in">
+            <!-- Text Panel -->
+            <div class="lg:w-5/12 p-8 pt-20 lg:p-12 lg:pt-24 flex flex-col justify-center bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 z-10">
+                <div class="inline-block px-3 py-1 mb-4 text-xs font-semibold text-orange-700 bg-orange-100 rounded-full w-max">MA = 2</div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-4">Movable Pulley</h1>
+                <div class="mb-6 flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl">
+                    <svg class="w-6 h-6 shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    <span class="font-semibold text-sm">Drag the green arrow UPWARDS!</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-lg">Halves the Effort</h3>
+                        <p class="text-slate-500 text-sm mt-1">Because two segments of rope support the movable pulley, the weight is shared. You only need half the force to lift it (<strong class="text-blue-600">F = W / 2</strong>).</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-lg">Doubles the Distance</h3>
+                        <p class="text-slate-500 text-sm mt-1">
+                            To raise the load by distance <span class="italic">h</span>, you must pull the rope twice as far (<strong class="text-orange-600">s = 2h</strong>).
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- Interactive SVG -->
+            <div class="lg:w-7/12 relative svg-bg flex items-center justify-center p-0 min-h-[600px] overflow-hidden">
+                <svg viewBox="0 0 500 680" class="w-full h-full max-h-[750px]">
+                    <defs>
+                        <filter id="mp-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.15"/></filter>
+                        <filter id="mp-glow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#22c55e" flood-opacity="0.4"/></filter>
+                        <pattern id="mp-hatch" patternUnits="userSpaceOnUse" width="14" height="14"><path d="M-2,2 l4,-4 M0,14 l14,-14 M12,16 l4,-4" stroke="#94a3b8" stroke-width="2" /></pattern>
+                    </defs>
+                    <!-- Ceiling -->
+                    <rect x="120" y="20" width="260" height="24" fill="url(#mp-hatch)" stroke="#64748b" stroke-width="3" rx="4"/>
+                    <line x1="80" y1="44" x2="420" y2="44" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+                    
+                    <!-- Left Ceiling Bracket (Fixed Point) -->
+                    <path d="M 185 44 L 215 44 L 205 80 L 195 80 Z" fill="#cbd5e1" stroke="#475569" stroke-width="3"/>
+                    <circle cx="200" cy="80" r="5" fill="#334155"/>
+
+                    <!-- Dynamic Ropes -->
+                    <line id="mp-rope-left" x1="200" y1="80" x2="200" y2="500" stroke="#64748b" stroke-width="7"/>
+                    <line id="mp-rope-right" x1="300" y1="500" x2="300" y2="400" stroke="#64748b" stroke-width="7"/>
+
+                    <!-- Moving Pulley & Weight Group -->
+                    <g id="mp-sys">
+                        <path d="M 200 500 A 50 50 0 0 0 300 500" fill="none" stroke="#64748b" stroke-width="7"/>
+                        <g id="mp-wheel" style="transform-origin: 250px 500px;">
+                            <circle cx="250" cy="500" r="50" fill="#f8fafc" stroke="#475569" stroke-width="5" filter="url(#mp-shadow)"/>
+                            <circle cx="250" cy="500" r="41" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+                            <line x1="250" y1="450" x2="250" y2="550" stroke="#94a3b8" stroke-width="3" stroke-dasharray="6 6"/>
+                            <line x1="200" y1="500" x2="300" y2="500" stroke="#94a3b8" stroke-width="3" stroke-dasharray="6 6"/>
+                        </g>
+                        <circle cx="250" cy="500" r="8" fill="#94a3b8" stroke="#334155" stroke-width="3"/>
+                        
+                        <!-- Weight Box -->
+                        <path d="M 250 500 L 250 550" stroke="#475569" stroke-width="6"/>
+                        <circle cx="250" cy="560" r="10" fill="none" stroke="#475569" stroke-width="5"/>
+                        <line x1="250" y1="570" x2="250" y2="580" stroke="#475569" stroke-width="6"/>
+                        <rect x="210" y="580" width="80" height="70" rx="10" fill="#f59e0b" stroke="#b45309" stroke-width="4" filter="url(#mp-shadow)"/>
+                        <text x="250" y="628" fill="white" font-size="34" font-weight="900" text-anchor="middle">W</text>
+                    </g>
+
+                    <!-- Force Handle (Moves UP) -->
+                    <g id="mp-force-handle" class="pull-handle">
+                        <rect x="230" y="150" width="140" height="250" fill="transparent"/>
+                        <path d="M 290 380 C 290 400, 310 400, 310 380" fill="none" stroke="#475569" stroke-width="6"/>
+                        <circle cx="300" cy="370" r="10" fill="#e2e8f0" stroke="#475569" stroke-width="4"/>
+                        <g class="force-arrow" filter="url(#mp-glow)">
+                            <!-- Arrow points UP -->
+                            <line x1="300" y1="360" x2="300" y2="250" stroke="#22c55e" stroke-width="12" stroke-linecap="round"/>
+                            <path d="M 280 275 L 300 240 L 320 275" stroke="#22c55e" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- Grip -->
+                            <line x1="288" y1="330" x2="312" y2="330" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="288" y1="340" x2="312" y2="340" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="288" y1="350" x2="312" y2="350" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <rect x="330" y="275" width="115" height="40" rx="20" fill="white" stroke="#22c55e" stroke-width="2" opacity="0.95"/>
+                            <text x="387" y="302" fill="#16a34a" font-size="18" font-weight="900" text-anchor="middle">F = W/2</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: COMPOUND PULLEY                    -->
+        <!-- ========================================== -->
+        <div id="view-compound" class="view-section hidden flex-1 flex flex-col lg:flex-row w-full h-full fade-in">
+            <!-- Text Panel -->
+            <div class="lg:w-5/12 p-8 pt-20 lg:p-12 lg:pt-24 flex flex-col justify-center bg-slate-50 border-b lg:border-b-0 lg:border-r border-slate-200 z-10">
+                <div class="inline-block px-3 py-1 mb-4 text-xs font-semibold text-teal-700 bg-teal-100 rounded-full w-max">MA = 2</div>
+                <h1 class="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-4">Compound Pulley</h1>
+                <div class="mb-6 flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl">
+                    <svg class="w-6 h-6 shrink-0 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path></svg>
+                    <span class="font-semibold text-sm">Drag the green arrow downwards!</span>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-lg">Best of Both Worlds</h3>
+                        <p class="text-slate-500 text-sm mt-1">The fixed pulley lets you pull down (convenient), while the movable pulley halves the effort (<strong class="text-blue-600">F = W / 2</strong>).</p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+                        <h3 class="font-bold text-slate-800 text-lg">Trade-off: Distance</h3>
+                        <p class="text-slate-500 text-sm mt-1">
+                            Conservation of energy applies. Saving half the effort means you must pull the rope twice the distance the load rises (<strong class="text-orange-600">s = 2h</strong>).
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!-- Interactive SVG -->
+            <div class="lg:w-7/12 relative svg-bg flex items-center justify-center p-0 min-h-[600px] overflow-hidden">
+                <svg viewBox="0 0 500 680" class="w-full h-full max-h-[750px]">
+                    <defs>
+                        <filter id="cp-shadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.15"/></filter>
+                        <filter id="cp-glow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#22c55e" flood-opacity="0.4"/></filter>
+                        <pattern id="cp-hatch" patternUnits="userSpaceOnUse" width="14" height="14"><path d="M-2,2 l4,-4 M0,14 l14,-14 M12,16 l4,-4" stroke="#94a3b8" stroke-width="2" /></pattern>
+                    </defs>
+                    <!-- Ceiling -->
+                    <rect x="120" y="20" width="260" height="24" fill="url(#cp-hatch)" stroke="#64748b" stroke-width="3" rx="4"/>
+                    <line x1="80" y1="44" x2="420" y2="44" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+                    
+                    <!-- Anchor Bracket (Left) -->
+                    <path d="M 165 44 L 195 44 L 185 80 L 175 80 Z" fill="#cbd5e1" stroke="#475569" stroke-width="3"/>
+                    <circle cx="180" cy="80" r="5" fill="#334155"/>
+                    
+                    <!-- Fixed Pulley Bracket (Right) -->
+                    <path d="M 275 44 C 275 80, 290 130, 300 130 C 310 130, 325 80, 325 44 Z" fill="#e2e8f0" stroke="#64748b" stroke-width="3" filter="url(#cp-shadow)"/>
+
+                    <!-- Dynamic Ropes -->
+                    <line id="cp-rope1" x1="180" y1="80" x2="180" y2="460" stroke="#64748b" stroke-width="6"/>
+                    <line id="cp-rope2" x1="260" y1="460" x2="260" y2="130" stroke="#64748b" stroke-width="6"/>
+                    <line id="cp-rope3" x1="340" y1="130" x2="340" y2="240" stroke="#64748b" stroke-width="6"/>
+
+                    <!-- Fixed Pulley -->
+                    <circle cx="300" cy="130" r="40" fill="#f8fafc" stroke="#475569" stroke-width="4" filter="url(#cp-shadow)"/>
+                    <circle cx="300" cy="130" r="33" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+                    <path d="M 260 130 A 40 40 0 0 1 340 130" fill="none" stroke="#64748b" stroke-width="6"/>
+                    <g id="cp-fixed-wheel" style="transform-origin: 300px 130px;">
+                        <line x1="300" y1="90" x2="300" y2="170" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 5"/>
+                        <line x1="260" y1="130" x2="340" y2="130" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 5"/>
+                    </g>
+                    <circle cx="300" cy="130" r="7" fill="#94a3b8" stroke="#334155" stroke-width="3"/>
+
+                    <!-- Moving Pulley & Weight Group -->
+                    <g id="cp-movable-sys">
+                        <path d="M 180 460 A 40 40 0 0 0 260 460" fill="none" stroke="#64748b" stroke-width="6"/>
+                        <g id="cp-movable-wheel" style="transform-origin: 220px 460px;">
+                            <circle cx="220" cy="460" r="40" fill="#f8fafc" stroke="#475569" stroke-width="4" filter="url(#cp-shadow)"/>
+                            <circle cx="220" cy="460" r="33" fill="#e2e8f0" stroke="#cbd5e1" stroke-width="2"/>
+                            <line x1="220" y1="420" x2="220" y2="500" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 5"/>
+                            <line x1="180" y1="460" x2="260" y2="460" stroke="#94a3b8" stroke-width="3" stroke-dasharray="5 5"/>
+                        </g>
+                        <circle cx="220" cy="460" r="7" fill="#94a3b8" stroke="#334155" stroke-width="3"/>
+                        <path d="M 220 460 L 220 500" stroke="#475569" stroke-width="5"/>
+                        <circle cx="220" cy="510" r="10" fill="none" stroke="#475569" stroke-width="5"/>
+                        <line x1="220" y1="520" x2="220" y2="530" stroke="#475569" stroke-width="5"/>
+                        <rect x="180" y="530" width="80" height="70" rx="10" fill="#f59e0b" stroke="#b45309" stroke-width="4" filter="url(#cp-shadow)"/>
+                        <text x="220" y="577" fill="white" font-size="34" font-weight="900" text-anchor="middle">W</text>
+                    </g>
+
+                    <!-- Force Handle (Moves Down) -->
+                    <g id="cp-force-handle" class="pull-handle">
+                        <rect x="270" y="150" width="140" height="260" fill="transparent"/>
+                        <path d="M 330 220 C 330 240, 350 240, 350 220" fill="none" stroke="#475569" stroke-width="6"/>
+                        <circle cx="340" cy="210" r="10" fill="#e2e8f0" stroke="#475569" stroke-width="4"/>
+                        <g class="force-arrow" filter="url(#cp-glow)">
+                            <line x1="340" y1="230" x2="340" y2="330" stroke="#22c55e" stroke-width="12" stroke-linecap="round"/>
+                            <path d="M 320 305 L 340 340 L 360 305" stroke="#22c55e" fill="none" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- Grip -->
+                            <line x1="328" y1="250" x2="352" y2="250" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="328" y1="260" x2="352" y2="260" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <line x1="328" y1="270" x2="352" y2="270" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+                            <rect x="375" y="270" width="110" height="40" rx="20" fill="white" stroke="#22c55e" stroke-width="2" opacity="0.95"/>
+                            <text x="430" y="297" fill="#16a34a" font-size="18" font-weight="900" text-anchor="middle">F = W/2</text>
+                        </g>
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Interactive Physics Engine & State Logic -->
+    <script>
+        // --- NAVIGATION STATE ---
+        function showView(viewId) {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            // Show requested view
+            document.getElementById(viewId).classList.remove('hidden');
+            
+            // Toggle Back button visibility
+            const backBtn = document.getElementById('btn-back');
+            if(viewId === 'view-menu') {
+                backBtn.classList.add('hidden');
+            } else {
+                backBtn.classList.remove('hidden');
+            }
+        }
+
+        // --- SHARED PHYSICS / DRAG STATE ---
+        let activeDrag = null; // 'fixed', 'movable', or 'compound'
+        let startY = 0;
+        
+        // Displacements (s)
+        let targets = { fp: 0, mp: 0, cp: 0 };
+        let currents = { fp: 0, mp: 0, cp: 0 };
+        
+        const MAX_PULL = { fp: 180, mp: -250, cp: 260 }; 
+        // mp is negative because we pull UP. fp/cp are positive (pull down)
+
+        // --- DOM Elements ---
+        const fp_sys = document.getElementById('fp-weight-sys');
+        const fp_handle = document.getElementById('fp-force-handle');
+        const fp_wheel = document.getElementById('fp-wheel');
+        const fp_rope_left = document.getElementById('fp-rope-left');
+        const fp_rope_right = document.getElementById('fp-rope-right');
+
+        const mp_sys = document.getElementById('mp-sys');
+        const mp_handle = document.getElementById('mp-force-handle');
+        const mp_wheel = document.getElementById('mp-wheel');
+        const mp_rope_left = document.getElementById('mp-rope-left');
+        const mp_rope_right = document.getElementById('mp-rope-right');
+
+        const cp_sys = document.getElementById('cp-movable-sys');
+        const cp_handle = document.getElementById('cp-force-handle');
+        const cp_fixed_wheel = document.getElementById('cp-fixed-wheel');
+        const cp_movable_wheel = document.getElementById('cp-movable-wheel');
+        const cp_rope1 = document.getElementById('cp-rope1');
+        const cp_rope2 = document.getElementById('cp-rope2');
+        const cp_rope3 = document.getElementById('cp-rope3');
+
+        // --- DRAG EVENT HANDLERS ---
+        function attachDraggable(handleEl, type) {
+            const startDrag = (e) => {
+                if (e.type === 'touchstart') e.preventDefault();
+                activeDrag = type;
+                document.body.classList.add('is-pulling');
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                // Preserve current displacement offset
+                startY = clientY - targets[type]; 
+            };
+            handleEl.addEventListener('mousedown', startDrag);
+            handleEl.addEventListener('touchstart', startDrag, { passive: false });
+        }
+
+        attachDraggable(fp_handle, 'fp');
+        attachDraggable(mp_handle, 'mp');
+        attachDraggable(cp_handle, 'cp');
+
+        const onDrag = (e) => {
+            if (!activeDrag) return;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            let delta = clientY - startY;
+
+            if (activeDrag === 'fp') {
+                targets.fp = Math.max(0, Math.min(delta, MAX_PULL.fp));
+            } else if (activeDrag === 'mp') {
+                // Dragging UP means negative delta
+                targets.mp = Math.max(MAX_PULL.mp, Math.min(delta, 0));
+            } else if (activeDrag === 'cp') {
+                targets.cp = Math.max(0, Math.min(delta, MAX_PULL.cp));
+            }
+        };
+
+        const endDrag = () => {
+            activeDrag = null;
+            document.body.classList.remove('is-pulling');
+            // Spring back to start
+            targets.fp = 0;
+            targets.mp = 0;
+            targets.cp = 0;
+        };
+
+        window.addEventListener('mousemove', onDrag);
+        window.addEventListener('touchmove', onDrag, { passive: false });
+        window.addEventListener('mouseup', endDrag);
+        window.addEventListener('touchend', endDrag);
+        document.documentElement.addEventListener('mouseleave', endDrag);
+
+        // --- ANIMATION LOOP ---
+        function animate() {
+            // Interpolate for smooth spring effect
+            currents.fp += (targets.fp - currents.fp) * 0.15;
+            currents.mp += (targets.mp - currents.mp) * 0.15;
+            currents.cp += (targets.cp - currents.cp) * 0.15;
+
+            // --- 1. Fixed Pulley Update ---
+            if (Math.abs(targets.fp - currents.fp) > 0.1 || currents.fp > 0.1) {
+                const s = currents.fp; // Hand moves DOWN
+                const h = s; // Weight moves UP (MA=1)
+                
+                fp_handle.style.transform = `translateY(${s}px)`;
+                fp_sys.style.transform = `translateY(${-h}px)`;
+                
+                // Rope updates (Base Y values from SVG)
+                fp_rope_left.setAttribute('y2', 400 - h);
+                fp_rope_right.setAttribute('y2', 280 + s);
+
+                // Wheel rotation (Radius = 50)
+                const angle = (s / 50) * (180 / Math.PI);
+                fp_wheel.style.transform = `rotate(${angle}deg)`;
+            }
+
+            // --- 2. Movable Pulley Update ---
+            if (Math.abs(targets.mp - currents.mp) > 0.1 || currents.mp < -0.1) {
+                const s = currents.mp; // Hand moves UP (Negative value)
+                const h = s / 2; // Weight moves UP (Negative value)
+
+                mp_handle.style.transform = `translateY(${s}px)`;
+                mp_sys.style.transform = `translateY(${h}px)`;
+
+                // Rope updates (Base Y: Left anchor 80, Movable base 500, Right handle 400)
+                mp_rope_left.setAttribute('y2', 500 + h);
+                mp_rope_right.setAttribute('y1', 500 + h);
+                mp_rope_right.setAttribute('y2', 400 + s);
+
+                // Wheel rotation (Radius = 50)
+                // When moving up, h is negative. Rope rolls counter-clockwise.
+                const angle = (Math.abs(h) / 50) * (180 / Math.PI);
+                mp_wheel.style.transform = `rotate(${-angle}deg)`;
+            }
+
+            // --- 3. Compound Pulley Update ---
+            if (Math.abs(targets.cp - currents.cp) > 0.1 || currents.cp > 0.1) {
+                const s = currents.cp; // Hand moves DOWN
+                const h = s / 2; // Weight moves UP (MA=2)
+
+                cp_handle.style.transform = `translateY(${s}px)`;
+                cp_sys.style.transform = `translateY(${-h}px)`;
+
+                // Rope updates (Base Ys: Anchor 80, Movable 460, Fixed 130, Handle 240)
+                cp_rope1.setAttribute('y2', 460 - h);
+                cp_rope2.setAttribute('y1', 460 - h);
+                cp_rope3.setAttribute('y2', 240 + s - 30); // 30 offset for visual hook
+
+                // Wheel rotations (Radius = 40)
+                const fixedAngle = (s / 40) * (180 / Math.PI);
+                cp_fixed_wheel.style.transform = `rotate(${fixedAngle}deg)`;
+                
+                const movableAngle = (h / 40) * (180 / Math.PI);
+                cp_movable_wheel.style.transform = `rotate(${-movableAngle}deg)`;
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Start engine
+        animate();
+    </script>
+</body>
+</html>
